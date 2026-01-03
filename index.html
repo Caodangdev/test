@@ -526,6 +526,20 @@
                 return;
             }
             
+            // Kiểm tra xem có hash #showcode không (từ kỹ thuật reverse popup)
+            const hash = window.location.hash;
+            if (hash && hash.startsWith('#showcode=')) {
+                const codeFromHash = decodeURIComponent(hash.substring('#showcode='.length));
+                if (codeFromHash && codeFromHash.length === 6) {
+                    // Hiển thị mã ngay lập tức mà không cần countdown
+                    accessCodeEl.textContent = codeFromHash;
+                    showState(codeState);
+                    // Xóa hash khỏi URL để gọn hơn
+                    history.replaceState(null, '', window.location.pathname + window.location.search);
+                    return;
+                }
+            }
+            
             startCountdown();
         }
         
@@ -560,12 +574,26 @@
                 return;
             }
             
-            window.open(AFFILIATE_LINK, '_blank');
+            // Kỹ thuật "reverse popup" để lách trình chặn popup:
+            // 1. Mở trang hiện tại trong tab mới (chứa mã xác thực)
+            // 2. Chuyển trang gốc sang Shopee
+            // -> Người dùng vẫn thấy trang mã ở tab mới, tab gốc chuyển sang Shopee
             
+            // Tạo mã trước khi mở tab mới
             const code = generateAccessCode(token);
-            accessCodeEl.textContent = code;
             
-            showState(codeState);
+            // Lưu URL hiện tại vào biến
+            const currentUrl = window.location.href;
+            
+            // Mở tab mới chứa "chính trang này" (sẽ reload và hiển thị mã)
+            // Thêm hash để trang mới biết cần hiển thị mã ngay
+            const newTab = window.open(currentUrl + '#showcode=' + encodeURIComponent(code), '_blank');
+            
+            // Chuyển trang hiện tại sang Shopee
+            // Dùng setTimeout nhỏ để đảm bảo tab mới đã mở
+            setTimeout(() => {
+                window.location.href = AFFILIATE_LINK;
+            }, 100);
         });
         
         copyBtn.addEventListener('click', () => {
